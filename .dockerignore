@@ -1,4 +1,9 @@
 README.md
 LICENSE
 .gitignore
+example.env
 compose*.yaml
+.env
+apps_json_base64.txt
+knimer-app.json
+pwd*.yml
