@@ -1,8 +1,8 @@
-version: "3"
+name: ${FRAPPE_INSTANCE}
 
 services:
   backend:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     deploy:
@@ -12,18 +12,18 @@ services:
       - sites:/home/frappe/frappe-bench/sites
       - logs:/home/frappe/frappe-bench/logs
     environment:
-      DB_HOST: db
-      DB_PORT: "3306"
-      MYSQL_ROOT_PASSWORD: admin
-      MARIADB_ROOT_PASSWORD: admin
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
 
   configurator:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     deploy:
       restart_policy:
-        condition: none
+        condition: unless-stopped
     entrypoint:
       - bash
       - -c
@@ -37,22 +37,22 @@ services:
         bench set-config -g redis_socketio "redis://$$REDIS_QUEUE";
         bench set-config -gp socketio_port $$SOCKETIO_PORT;
     environment:
-      DB_HOST: db
-      DB_PORT: "3306"
-      REDIS_CACHE: redis-cache:6379
-      REDIS_QUEUE: redis-queue:6379
-      SOCKETIO_PORT: "9000"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      REDIS_CACHE: ${REDIS_CACHE}
+      REDIS_QUEUE: ${REDIS_QUEUE}
+      SOCKETIO_PORT: ${SOCKETIO_PORT}
     volumes:
       - sites:/home/frappe/frappe-bench/sites
       - logs:/home/frappe/frappe-bench/logs
 
   create-site:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     deploy:
       restart_policy:
-        condition: none
+        condition: unless-stopped
     volumes:
       - sites:/home/frappe/frappe-bench/sites
       - logs:/home/frappe/frappe-bench/logs
@@ -61,9 +61,9 @@ services:
       - -c
     command:
       - >
-        wait-for-it -t 120 db:3306;
-        wait-for-it -t 120 redis-cache:6379;
-        wait-for-it -t 120 redis-queue:6379;
+        wait-for-it -t 120 $$DB_HOST:$$DB_PORT;
+        wait-for-it -t 120 $$REDIS_CACHE;
+        wait-for-it -t 120 $$REDIS_QUEUE;
         export start=`date +%s`;
         until [[ -n `grep -hs ^ sites/common_site_config.json | jq -r ".db_host // empty"` ]] && \
           [[ -n `grep -hs ^ sites/common_site_config.json | jq -r ".redis_cache // empty"` ]] && \
@@ -77,63 +77,66 @@ services:
           fi
         done;
         echo "sites/common_site_config.json found";
-        bench new-site --mariadb-user-host-login-scope='%' --admin-password=admin --db-root-username=root --db-root-password=admin --install-app erpnext --set-default frontend;
+        bench new-site --mariadb-user-host-login-scope='%' --admin-password=$$ADMIN_PASSWORD --db-host $$DB_HOST --db-root-username=root --db-root-password=$$MYSQL_ROOT_PASSWORD --install-app erpnext --set-default $$SITE_NAME;
+        bench --site $$SITE_NAME --install-app $$APPS_TO_INSTALL
+        bench --site $$SITE_NAME set-config host_name $$SITE_NAME
 
   db:
     image: mariadb:10.6
+    container_name: ${DB_HOST}
     networks:
       - frappe_network
     healthcheck:
-      test: mysqladmin ping -h localhost --password=admin
+      test: mysqladmin ping -h localhost --password=${MYSQL_ROOT_PASSWORD}
       interval: 1s
       retries: 20
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --skip-character-set-client-handshake
       - --skip-innodb-read-only-compressed # Temporary fix for MariaDB 10.6
     environment:
-      MYSQL_ROOT_PASSWORD: admin
-      MARIADB_ROOT_PASSWORD: admin
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
     volumes:
       - db-data:/var/lib/mysql
 
   frontend:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     depends_on:
       - websocket
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     command:
       - nginx-entrypoint.sh
     environment:
-      BACKEND: backend:8000
-      FRAPPE_SITE_NAME_HEADER: frontend
-      SOCKETIO: websocket:9000
-      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
-      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
-      UPSTREAM_REAL_IP_RECURSIVE: "off"
-      PROXY_READ_TIMEOUT: 120
-      CLIENT_MAX_BODY_SIZE: 50m
+      BACKEND: ${BACKEND}
+      FRAPPE_SITE_NAME_HEADER: ${FRAPPE_SITE_NAME_HEADER}
+      SOCKETIO: ${SOCKETIO}
+      UPSTREAM_REAL_IP_ADDRESS: ${UPSTREAM_REAL_IP_ADDRESS}
+      UPSTREAM_REAL_IP_HEADER: ${UPSTREAM_REAL_IP_HEADER}
+      UPSTREAM_REAL_IP_RECURSIVE: ${UPSTREAM_REAL_IP_RECURSIVE}
+      PROXY_READ_TIMEOUT: ${PROXY_READ_TIMEOUT}
+      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE}
     volumes:
       - sites:/home/frappe/frappe-bench/sites
       - logs:/home/frappe/frappe-bench/logs
     ports:
-      - "8080:8080"
+      - "${HTTP_PUBLISH_PORT}:8080"
 
   queue-long:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     command:
       - bench
       - worker
@@ -144,12 +147,12 @@ services:
       - logs:/home/frappe/frappe-bench/logs
 
   queue-short:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     command:
       - bench
       - worker
@@ -165,7 +168,7 @@ services:
       - frappe_network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     volumes:
       - redis-queue-data:/data
 
@@ -175,17 +178,17 @@ services:
       - frappe_network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     volumes:
       - redis-cache-data:/data
 
   scheduler:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     command:
       - bench
       - schedule
@@ -194,12 +197,12 @@ services:
       - logs:/home/frappe/frappe-bench/logs
 
   websocket:
-    image: frappe/erpnext:v15.47.1
+    image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
     networks:
       - frappe_network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: unless-stopped
     command:
       - node
       - /home/frappe/frappe-bench/apps/frappe/socketio.js
