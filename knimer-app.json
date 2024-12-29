@@ -28,10 +28,6 @@
         "branch": "version-15"
     },
     {
-        "url": "https://github.com/frappe/gameplan",
-        "branch": "main"
-    },
-    {
         "url": "https://github.com/frappe/insights",
         "branch": "main"
     },
