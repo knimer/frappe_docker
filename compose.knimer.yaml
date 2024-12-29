@@ -56,8 +56,8 @@ services:
 
   create-site:
     image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
-    networks:
-      - frappe_network
+#    networks:
+#      - frappe_network
     deploy:
       restart_policy:
         condition: unless-stopped
