@@ -108,8 +108,12 @@ services:
     volumes:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
-      - backend
-      - websocket
+      backend:
+        condition: service_started
+      websocket:
+        condition: service_started
+      create-site:
+        condition: service_completed_successfully
 
   websocket:
     <<: [*depends_on_configurator, *customizable_image]
