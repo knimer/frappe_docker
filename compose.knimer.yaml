@@ -64,10 +64,13 @@ services:
     depends_on:
       erp-fsfg-db:
         condition: service_healthy
+        required: true
       backend:
         condition: service_started
+        required: true
       configurator:
         condition: service_completed_successfully
+        required: true
     volumes:
       - sites:/home/frappe/frappe-bench/sites
 #      - logs:/home/frappe/frappe-bench/logs
@@ -102,9 +105,9 @@ services:
         done;
         echo "sites/common_site_config.json found";
         bench new-site --mariadb-user-host-login-scope='%' --admin-password=$$ADMIN_PASSWORD --db-host $$DB_HOST --db-root-username=root --db-root-password=$$MYSQL_ROOT_PASSWORD --install-app erpnext --set-default $$SITE_NAME;
-        bench --site $$SITE_NAME set-config host_name $$SITE_NAME
-        bench --site $$SITE_NAME enable-secheduler
-        bench --site $$SITE_NAME --install-app $$APPS_TO_INSTALL
+        bench --site $$SITE_NAME set-config host_name $$SITE_NAME;
+        bench --site $$SITE_NAME enable-secheduler;
+        bench --site $$SITE_NAME install-app $$APPS_TO_INSTALL;
 
   frontend:
     <<: *customizable_image
@@ -128,6 +131,8 @@ services:
         condition: service_started
       websocket:
         condition: service_started
+      configurator:
+        condition: service_completed_successfully
       create-site:
         condition: service_completed_successfully
 
