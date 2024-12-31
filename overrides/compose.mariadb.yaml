@@ -4,10 +4,10 @@ services:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
     depends_on:
-      ${DB_HOST}:
+      erp-fsfg-db:
         condition: service_healthy
 
-  ${DB_HOST}:
+  erp-fsfg-db:
     image: mariadb:10.6
     container_name: ${DB_HOST}
     healthcheck:
@@ -21,7 +21,7 @@ services:
       - --skip-innodb-read-only-compressed # Temporary fix for MariaDB 10.6
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?No db password set}
-    restart: unless_stopped
+    restart: unless-stopped
     volumes:
       - db-data:/var/lib/mysql
 

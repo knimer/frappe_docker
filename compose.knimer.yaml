@@ -34,7 +34,6 @@ services:
         bench set-config -g redis_queue "redis://$$REDIS_QUEUE";
         bench set-config -g redis_socketio "redis://$$REDIS_QUEUE";
         bench set-config -gp socketio_port $$SOCKETIO_PORT;
-        bench
     environment:
       DB_HOST: ${DB_HOST:-}
       DB_PORT: ${DB_PORT:-}
@@ -63,10 +62,24 @@ services:
       restart_policy:
         condition: unless-stopped
     depends_on:
-      - backend
+      erp-fsfg-db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+      configurator:
+        condition: service_completed_successfully
     volumes:
       - sites:/home/frappe/frappe-bench/sites
 #      - logs:/home/frappe/frappe-bench/logs
+    environment:
+      DB_HOST: ${DB_HOST:-}
+      DB_PORT: ${DB_PORT:-}
+      REDIS_CACHE: ${REDIS_CACHE:-}
+      REDIS_QUEUE: ${REDIS_QUEUE:-}
+      SOCKETIO_PORT: ${SOCKETIO_PORT:-9000}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SITE_NAME: ${SITE_NAME}
+      APPS_TO_INSTALL: ${APPS_TO_INSTALL}
     entrypoint:
       - bash
       - -c
@@ -89,8 +102,9 @@ services:
         done;
         echo "sites/common_site_config.json found";
         bench new-site --mariadb-user-host-login-scope='%' --admin-password=$$ADMIN_PASSWORD --db-host $$DB_HOST --db-root-username=root --db-root-password=$$MYSQL_ROOT_PASSWORD --install-app erpnext --set-default $$SITE_NAME;
-        bench --site $$SITE_NAME --install-app $$APPS_TO_INSTALL
         bench --site $$SITE_NAME set-config host_name $$SITE_NAME
+        bench --site $$SITE_NAME enable-secheduler
+        bench --site $$SITE_NAME --install-app $$APPS_TO_INSTALL
 
   frontend:
     <<: *customizable_image
