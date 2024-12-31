@@ -60,7 +60,7 @@ services:
 #      - frappe_network
     deploy:
       restart_policy:
-        condition: unless-stopped
+        condition: none
     depends_on:
       erp-fsfg-db:
         condition: service_healthy
@@ -77,10 +77,14 @@ services:
     environment:
       DB_HOST: ${DB_HOST:-}
       DB_PORT: ${DB_PORT:-}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
       REDIS_CACHE: ${REDIS_CACHE:-}
       REDIS_QUEUE: ${REDIS_QUEUE:-}
       SOCKETIO_PORT: ${SOCKETIO_PORT:-9000}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       SITE_NAME: ${SITE_NAME}
       APPS_TO_INSTALL: ${APPS_TO_INSTALL}
     entrypoint:
@@ -104,7 +108,7 @@ services:
           fi
         done;
         echo "sites/common_site_config.json found";
-        bench new-site --mariadb-user-host-login-scope='%' --admin-password=$$ADMIN_PASSWORD --db-host $$DB_HOST --db-port $$DB_PORT --db-passwor $$DB_PASSWORD --db-root-username=root --db-root-password=$$MYSQL_ROOT_PASSWORD --install-app erpnext --set-default $$SITE_NAME;
+        bench new-site --mariadb-user-host-login-scope='%' --admin-password=$$ADMIN_PASSWORD --db-host $$DB_HOST --db-port $$DB_PORT --db-name $$DB_NAME --db-password $$DB_PASSWORD --db-root-username=root --db-root-password=$$MYSQL_ROOT_PASSWORD --install-app erpnext --set-default $$SITE_NAME;
         bench --site $$SITE_NAME set-config host_name $$SITE_NAME;
         bench --site $$SITE_NAME enable-scheduler;
         bench --site $$SITE_NAME install-app $$APPS_TO_INSTALL;
@@ -163,3 +167,4 @@ services:
 # ERPNext requires local assets access (Frappe does not)
 volumes:
   sites:
+  
