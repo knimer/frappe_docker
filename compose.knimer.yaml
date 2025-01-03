@@ -56,8 +56,6 @@ services:
 
   create-site:
     image: ${CUSTOM_IMAGE}:${CUSTOM_TAG}
-#    networks:
-#      - frappe_network
     deploy:
       restart_policy:
         condition: none
@@ -73,7 +71,6 @@ services:
         required: true
     volumes:
       - sites:/home/frappe/frappe-bench/sites
-#      - logs:/home/frappe/frappe-bench/logs
     environment:
       DB_HOST: ${DB_HOST:-}
       DB_PORT: ${DB_PORT:-}

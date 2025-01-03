@@ -4,10 +4,10 @@ services:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
     depends_on:
-      erp-fsfg-db:
+      erp-openly-db:
         condition: service_healthy
 
-  erp-fsfg-db:
+  erp-openly-db:
     image: mariadb:10.6
     container_name: ${DB_HOST}
     healthcheck:
