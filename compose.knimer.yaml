@@ -60,7 +60,7 @@ services:
       restart_policy:
         condition: none
     depends_on:
-      erp-fsfg-db:
+      erp-openly-db:
         condition: service_healthy
         required: true
       backend:
