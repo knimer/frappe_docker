@@ -32,7 +32,11 @@
         "branch": "main"
     },
     {
-      "url": "https://${GIT_PAT}@github.com/knimer/website_leads.git",
+        "url": "https://github.com/frappe/drive",
+        "branch": "main"
+    },
+    {
+      "url": "https://{ GIT_PAT }@github.com/knimer/website_leads.git",
       "branch": "develop"
     }
 ]
