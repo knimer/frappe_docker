@@ -130,6 +130,9 @@ services:
       UPSTREAM_REAL_IP_RECURSIVE: ${UPSTREAM_REAL_IP_RECURSIVE:-off}
       PROXY_READ_TIMEOUT: ${PROXY_READ_TIMEOUT:-120}
       CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-50m}
+    deploy:
+      restart_policy:
+        condition: unless-stopped
     volumes:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
